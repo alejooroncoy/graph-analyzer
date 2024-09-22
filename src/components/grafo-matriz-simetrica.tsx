@@ -19,6 +19,7 @@ import findConnectedComponents from "@/lib/findConnectedComponents";
 import { InfoIcon } from "lucide-react";
 import ComponentsConvexs from "./ComponentsConvexs";
 import Matrix from "./Matrix";
+import getLetter from "@/utils/getLetter";
 
 const resolveSize = (size: number | string) => {
   if (size === "") {
@@ -72,9 +73,6 @@ export function GrafoMatrizSimetrica() {
     setMatrix(newMatrix);
   };
 
-  const getLetter = (index: number) => {
-    return String.fromCharCode(65 + index);
-  };
 
   // const onNodeClick = useCallback(
   //   (event, node) => {

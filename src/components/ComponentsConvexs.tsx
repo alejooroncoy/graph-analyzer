@@ -10,6 +10,7 @@ import {
 } from "./ui/tooltip";
 import { ScrollArea, ScrollBar } from "./ui/scroll-area";
 import { Card, CardContent } from "./ui/card";
+import getLetter from "@/utils/getLetter";
 
 type ComponentConvex = {
   from: number;
@@ -85,7 +86,7 @@ const ComponentsConvexs: FC<ComponentsConvexsProps> = ({
                   V<sub>{index}</sub>
                   <span> = </span>
                   <span>{`{ ${component
-                    .map((j) => j.from)
+                    .map((j) => getLetter(j.from))
                     .join(", ")} }`}</span>
                 </li>
               ))}
