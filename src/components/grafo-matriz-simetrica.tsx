@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, FormEventHandler } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -45,7 +45,8 @@ export function GrafoMatrizSimetrica() {
 
   const sizeNumber = useMemo(() => resolveSize(size), [size]);
 
-  const generateMatrix = () => {
+  const generateMatrix: FormEventHandler<HTMLFormElement> = (e) => {
+    e.preventDefault();
     if (sizeNumber < 5 || sizeNumber > 16) {
       setError("Por favor, ingrese un número entre 8 y 16.");
       setMatrix([]);
@@ -313,8 +314,8 @@ export function GrafoMatrizSimetrica() {
             </Button>
           </div>
           <ScrollArea className="mt-4 flex flex-col flex-1">
-            <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mb-4 items-center justify-center">
-              <div className="flex items-center space-x-2">
+            <div className="flex flex-col py-3 sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mb-4 items-center justify-center">
+              <form onSubmit={generateMatrix} id="form-matrix-large" className="flex items-center space-x-2">
                 <label htmlFor="matrix-size" className="text-sm font-medium">
                   Tamaño de la matriz:
                 </label>
@@ -329,8 +330,8 @@ export function GrafoMatrizSimetrica() {
                   max={16}
                   className="w-20"
                 />
-              </div>
-              <Button onClick={generateMatrix} className="w-full sm:w-auto">
+              </form>
+              <Button type="submit" form="form-matrix-large"  className="w-full sm:w-auto">
                 Generar Matriz
               </Button>
             </div>
@@ -360,7 +361,7 @@ export function GrafoMatrizSimetrica() {
             </SheetHeader>
             <ScrollArea className="mt-4 flex flex-col flex-1">
               <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mb-4 items-center justify-center">
-                <div className="flex items-center space-x-2">
+                <form onSubmit={generateMatrix} id="form-matrix-mobile" className="flex items-center space-x-2">
                   <label htmlFor="matrix-size" className="text-sm font-medium">
                     Tamaño de la matriz:
                   </label>
@@ -377,8 +378,8 @@ export function GrafoMatrizSimetrica() {
                     max={16}
                     className="w-20"
                   />
-                </div>
-                <Button onClick={generateMatrix} className="w-full sm:w-auto">
+                </form>
+                <Button  form="form-matrix-mobile" className="w-full sm:w-auto">
                   Generar Matriz
                 </Button>
               </div>
