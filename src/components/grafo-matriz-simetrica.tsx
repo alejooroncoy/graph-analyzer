@@ -37,7 +37,7 @@ export function GrafoMatrizSimetrica() {
     }[][]
   >([]);
 
-  const [size, setSize] = useState<number | string>(5);
+  const [size, setSize] = useState<number | string>(8);
   const [matrix, setMatrix] = useState<boolean[][]>([]);
   const [error, setError] = useState<string>("");
   // const [selectedNode, setSelectedNode] = useState<string | null>(null);
