@@ -16,10 +16,19 @@ import { AnimatePresence, motion } from "framer-motion";
 import useWindowSize from "@/hooks/useWindowSize";
 import { ScrollArea } from "./ui/scroll-area";
 import findConnectedComponents from "@/lib/findConnectedComponents";
-import { InfoIcon } from "lucide-react";
+import { ChartNetwork } from "lucide-react";
 import ComponentsConvexs from "./ComponentsConvexs";
 import Matrix from "./Matrix";
 import getLetter from "@/utils/getLetter";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "./ui/resizable";
+import useMediaQuery from "@/hooks/useMediaQuery";
+import { Label } from "./ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import StepsAnalyzer from "./StepsAnalyzer";
 
 const resolveSize = (size: number | string) => {
   if (size === "") {
@@ -40,8 +49,17 @@ export function GrafoMatrizSimetrica() {
   const [size, setSize] = useState<number | string>(8);
   const [matrix, setMatrix] = useState<boolean[][]>([]);
   const [error, setError] = useState<string>("");
+  const [steps, setSteps] = useState<{
+    adjacencyMatrix: boolean[][];
+    pathMatrix: boolean[][];
+    sortedIndices: number[];
+    reorderedMatrix: boolean[][];
+    originalIndices: number[];
+    components: number[][];
+  } | null>(null);
   // const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const { height, width } = useWindowSize(containerRef);
+  const isMobile = useMediaQuery("(max-width: 640px)");
 
   const sizeNumber = useMemo(() => resolveSize(size), [size]);
 
@@ -74,7 +92,6 @@ export function GrafoMatrizSimetrica() {
     setMatrix(newMatrix);
   };
 
-
   // const onNodeClick = useCallback(
   //   (event, node) => {
   //     setSelectedNode(node.id === selectedNode ? null : node.id);
@@ -99,9 +116,12 @@ export function GrafoMatrizSimetrica() {
   );
 
   useEffect(() => {
-    const newComponents = findConnectedComponents(matrix);
+    if (matrix.length > 0) {
+      const newComponents = findConnectedComponents(matrix);
 
-    setComponents(newComponents);
+      setSteps(newComponents.steps);
+      setComponents(newComponents.components);
+    }
   }, [matrix]);
 
   const cellSize = Math.min(60, width / 12);
@@ -184,171 +204,246 @@ export function GrafoMatrizSimetrica() {
 
   return (
     <main className="w-full h-dvh sm:flex">
-      <section
-        ref={containerRef}
-        className="border rounded sm:flex-1 sm:w-full h-dvh"
-      >
-        <AnimatePresence>
-          <ComponentsConvexs containerRef={containerRef} components={components} />
-        </AnimatePresence>
-        <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`}>
-          <defs>
-            {colors.map((color, index) => (
-              <marker
-                key={index}
-                id={`arrowhead-${index}`}
-                markerWidth="8"
-                markerHeight="6"
-                refX="7"
-                refY="3"
-                orient="auto"
-              >
-                <motion.path
-                  d="M0,0 L0,6 L8,3 z"
-                  fill={color}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.5, delay: 1 }}
-                />
-              </marker>
-            ))}
-          </defs>
-          <AnimatePresence>
-            {positionedLayout.map((group, componentIndex) => {
-              return (
-                <motion.g
-                  key={componentIndex}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1, x: group.x, y: group.y }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.3, type: "spring", stiffness: 100 }}
-                >
-                  {group.nodes.map((node, i) => {
-                    return (
-                      <g key={node.from}>
-                        {node.to.map((targetValue, j) => {
-                          const targetNode = group.nodes.find(
-                            (n) => n.from === targetValue
-                          );
-                          if (!targetNode) return null;
-                          const dx = targetNode.x - node.x;
-                          const dy = targetNode.y - node.y;
-                          const distance = Math.sqrt(dx * dx + dy * dy);
-                          const ratio = (distance - nodeRadius - 5) / distance;
-                          const endX = node.x + dx * ratio;
-                          const endY = node.y + dy * ratio;
-                          const isBidirectional = targetNode.to.includes(
-                            node.from
-                          );
-                          const curveOffset = isBidirectional ? 20 : 0;
-                          const midX = (node.x + targetNode.x) / 2;
-                          const midY = (node.y + targetNode.y) / 2;
-                          const controlX = midX - (curveOffset * dy) / distance;
-                          const controlY = midY + (curveOffset * dx) / distance;
-                          const pathD = `M${node.x},${node.y} Q${controlX},${controlY} ${endX},${endY}`;
-                          return (
-                            <motion.path
-                              key={`${i}-${j}`}
-                              d={pathD}
-                              fill="none"
-                              stroke={colors[componentIndex % colors.length]}
-                              strokeWidth="2"
-                              markerEnd={`url(#arrowhead-${
-                                componentIndex % colors.length
-                              })`}
-                              initial={{ pathLength: 0 }}
-                              animate={{ pathLength: 1 }}
-                              exit={{ pathLength: 0 }}
-                              transition={{ duration: 0.5, delay: 0.5 }}
+      <ResizablePanelGroup direction="horizontal">
+        <ResizablePanel minSize={30} defaultSize={60}>
+          <section
+            ref={containerRef}
+            className="border rounded sm:flex-1 sm:w-full h-dvh"
+          >
+            <ComponentsConvexs
+              containerRef={containerRef}
+              components={components}
+            />
+            <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`}>
+              <defs>
+                {colors.map((color, index) => (
+                  <marker
+                    key={index}
+                    id={`arrowhead-${index}`}
+                    markerWidth="8"
+                    markerHeight="6"
+                    refX="7"
+                    refY="3"
+                    orient="auto"
+                  >
+                    <motion.path
+                      d="M0,0 L0,6 L8,3 z"
+                      fill={color}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.5, delay: 1 }}
+                    />
+                  </marker>
+                ))}
+              </defs>
+              <AnimatePresence>
+                {positionedLayout.map((group, componentIndex) => {
+                  return (
+                    <motion.g
+                      key={componentIndex}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1, x: group.x, y: group.y }}
+                      exit={{ opacity: 0 }}
+                      transition={{
+                        duration: 0.3,
+                        type: "spring",
+                        stiffness: 100,
+                      }}
+                    >
+                      {group.nodes.map((node, i) => {
+                        return (
+                          <g key={node.from}>
+                            {node.to.map((targetValue, j) => {
+                              const targetNode = group.nodes.find(
+                                (n) => n.from === targetValue
+                              );
+                              if (!targetNode) return null;
+                              const dx = targetNode.x - node.x;
+                              const dy = targetNode.y - node.y;
+                              const distance = Math.sqrt(dx * dx + dy * dy);
+                              const ratio =
+                                (distance - nodeRadius - 5) / distance;
+                              const endX = node.x + dx * ratio;
+                              const endY = node.y + dy * ratio;
+                              const isBidirectional = targetNode.to.includes(
+                                node.from
+                              );
+                              const curveOffset = isBidirectional ? 20 : 0;
+                              const midX = (node.x + targetNode.x) / 2;
+                              const midY = (node.y + targetNode.y) / 2;
+                              const controlX =
+                                midX - (curveOffset * dy) / distance;
+                              const controlY =
+                                midY + (curveOffset * dx) / distance;
+                              const pathD = `M${node.x},${node.y} Q${controlX},${controlY} ${endX},${endY}`;
+                              return (
+                                <motion.path
+                                  key={`${i}-${j}`}
+                                  d={pathD}
+                                  fill="none"
+                                  stroke={
+                                    colors[componentIndex % colors.length]
+                                  }
+                                  strokeWidth="2"
+                                  markerEnd={`url(#arrowhead-${
+                                    componentIndex % colors.length
+                                  })`}
+                                  initial={{ pathLength: 0 }}
+                                  animate={{ pathLength: 1 }}
+                                  exit={{ pathLength: 0 }}
+                                  transition={{ duration: 0.5, delay: 0.5 }}
+                                />
+                              );
+                            })}
+                            <motion.circle
+                              r={nodeRadius}
+                              fill={colors[componentIndex % colors.length]}
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1, cx: node.x, cy: node.y }}
+                              transition={{
+                                type: "spring",
+                                stiffness: 300,
+                                damping: 20,
+                                delay: 0.15,
+                              }}
                             />
-                          );
-                        })}
-                        <motion.circle
-                          r={nodeRadius}
-                          fill={colors[componentIndex % colors.length]}
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1, cx: node.x, cy: node.y }}
-                          transition={{
-                            type: "spring",
-                            stiffness: 300,
-                            damping: 20,
-                            delay: 0.15,
-                          }}
-                        />
-                        <motion.text
-                          textAnchor="middle"
-                          dominantBaseline="central"
-                          fill="white"
-                          fontSize={fontSize}
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1, x: node.x, y: node.y }}
-                          transition={{
-                            duration: 0.3,
-                            delay: 0.15,
-                            type: "spring",
-                            stiffness: 300,
-                            damping: 20,
-                          }}
-                        >
-                          {getLetter(node.from)}
-                        </motion.text>
-                      </g>
-                    );
-                  })}
-                </motion.g>
-              );
-            })}
-          </AnimatePresence>
-        </svg>
-      </section>
+                            <motion.text
+                              textAnchor="middle"
+                              dominantBaseline="central"
+                              fill="white"
+                              fontSize={fontSize}
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1, x: node.x, y: node.y }}
+                              transition={{
+                                duration: 0.3,
+                                delay: 0.15,
+                                type: "spring",
+                                stiffness: 300,
+                                damping: 20,
+                              }}
+                            >
+                              {getLetter(node.from)}
+                            </motion.text>
+                          </g>
+                        );
+                      })}
+                    </motion.g>
+                  );
+                })}
+              </AnimatePresence>
+            </svg>
 
-      <section className="hidden sm:block">
-        <div className="w-[400px] sm:w-[540px] h-dvh  p-4 sm:max-w-full flex flex-col">
-          <div className="px-2 py-3 flex justify-between">
-            <div>
-              <h2>GraphAnalyzer</h2>
-              <p>Genera y modifica una matriz booleana.</p>
+            <div className="fixed bottom-0 left-0 m-4">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button size="icon">
+                    <ChartNetwork className="size-6" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-fit">
+                  <div className="grid gap-4">
+                    <div className="space-y-2">
+                      <h4 className="font-medium leading-none">Nodos</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Define el significado de los nodos.
+                      </p>
+                    </div>
+                    <div className="grid gap-2">
+                      {Array.from({ length: +size }).map((_, index) => (
+                        <div key={index} className="flex gap-2 items-center">
+                          <Label htmlFor="info-letter">
+                            {getLetter(index)}:
+                          </Label>
+                          <Input
+                            onClick={(e) => e.stopPropagation()}
+                            id="info-letter"
+                            type="text"
+                            placeholder={`Nodo ${getLetter(index)}`}
+                            defaultValue={`Ciudad ${getLetter(index)}`}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
-            <Button className="">
-              <InfoIcon className="w-5 h-5" />
-            </Button>
-          </div>
-          <ScrollArea className="mt-4 flex flex-col flex-1">
-            <div className="flex flex-col py-3 sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mb-4 items-center justify-center">
-              <form onSubmit={generateMatrix} id="form-matrix-large" className="flex items-center space-x-2">
-                <label htmlFor="matrix-size" className="text-sm font-medium">
-                  Tamaño de la matriz:
-                </label>
-                <Input
-                  id="matrix-size"
-                  type="number"
-                  value={size}
-                  onChange={(e) =>
-                    setSize(e.target.value === "" ? "" : Number(e.target.value))
-                  }
-                  min={8}
-                  max={16}
-                  className="w-20"
-                />
-              </form>
-              <Button type="submit" form="form-matrix-large"  className="w-full sm:w-auto">
-                Generar Matriz
-              </Button>
-            </div>
-            {matrix.length > 0 && (
-              <Matrix matrix={matrix} toggleCell={toggleCell} />
-            )}
-            {error && (
-              <Alert variant="destructive" className="mb-4">
-                <AlertTitle>Error</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-          </ScrollArea>
-        </div>
-      </section>
+          </section>
+        </ResizablePanel>
+        {!isMobile && (
+          <>
+            <ResizableHandle withHandle />
+            <ResizablePanel minSize={38}>
+              <section className="hidden sm:block">
+                <div className="h-dvh  p-4 w-full flex flex-col">
+                  <div className="px-2 py-3 flex justify-between">
+                    <div>
+                      <h2>GraphAnalyzer</h2>
+                      <p>Genera y modifica una matriz booleana.</p>
+                    </div>
+                    <StepsAnalyzer steps={steps} />
+                  </div>
+                  <ScrollArea className="mt-4 flex flex-col flex-1 [&>div]:flex [&>div]:flex-col [&>div>div]:flex-1 [&>div>div]:!flex [&>div>div]:flex-col">
+                    <div className="flex flex-col py-3 sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mb-4 items-center justify-center">
+                      <form
+                        onSubmit={generateMatrix}
+                        id="form-matrix-large"
+                        className="flex items-center space-x-2"
+                      >
+                        <label
+                          htmlFor="matrix-size"
+                          className="text-sm font-medium"
+                        >
+                          Tamaño de la matriz:
+                        </label>
+                        <Input
+                          id="matrix-size"
+                          type="number"
+                          value={size}
+                          onChange={(e) =>
+                            setSize(
+                              e.target.value === ""
+                                ? ""
+                                : Number(e.target.value)
+                            )
+                          }
+                          min={8}
+                          max={16}
+                          className="w-20"
+                        />
+                      </form>
+                      <Button
+                        type="submit"
+                        form="form-matrix-large"
+                        className="w-full sm:w-auto"
+                      >
+                        Generar Matriz
+                      </Button>
+                    </div>
+                    {matrix.length > 0 && (
+                      <Matrix matrix={matrix} toggleCell={toggleCell} />
+                    )}
+                    {matrix.length <= 0 && (
+                      <div className="flex flex-col items-center justify-center h-full flex-1">
+                        <p>Genera una matriz para visualizarla aquí.</p>
+                      </div>
+                    )}
+                    {error && (
+                      <Alert variant="destructive" className="mb-4">
+                        <AlertTitle>Error</AlertTitle>
+                        <AlertDescription>{error}</AlertDescription>
+                      </Alert>
+                    )}
+                  </ScrollArea>
+                </div>
+              </section>
+            </ResizablePanel>
+          </>
+        )}
+      </ResizablePanelGroup>
+
       <section className="absolute top-4 right-4 block sm:hidden">
-        <Sheet>
+        <Sheet open={!isMobile ? false : undefined}>
           <SheetTrigger asChild>
             <Button variant="outline">Abrir Matriz</Button>
           </SheetTrigger>
@@ -361,7 +456,11 @@ export function GrafoMatrizSimetrica() {
             </SheetHeader>
             <ScrollArea className="mt-4 flex flex-col flex-1">
               <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mb-4 items-center justify-center">
-                <form onSubmit={generateMatrix} id="form-matrix-mobile" className="flex items-center space-x-2">
+                <form
+                  onSubmit={generateMatrix}
+                  id="form-matrix-mobile"
+                  className="flex items-center space-x-2"
+                >
                   <label htmlFor="matrix-size" className="text-sm font-medium">
                     Tamaño de la matriz:
                   </label>
@@ -379,7 +478,7 @@ export function GrafoMatrizSimetrica() {
                     className="w-20"
                   />
                 </form>
-                <Button  form="form-matrix-mobile" className="w-full sm:w-auto">
+                <Button form="form-matrix-mobile" className="w-full sm:w-auto">
                   Generar Matriz
                 </Button>
               </div>

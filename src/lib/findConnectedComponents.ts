@@ -14,10 +14,10 @@ function generateConnectionsForComponent(matrix: boolean[][], component: number[
         toNodes.push(to);
       }
     }
-   
+
     if (toNodes.length > 0) {
       connections.push({ from, to: toNodes });
-    } else{
+    } else {
       connections.push({ from, to: [from] });
     }
   }
@@ -121,7 +121,17 @@ function getDiagonalBlocks(matrix: boolean[][]): number[][] {
 }
 
 // Función principal que ejecuta los pasos
-function findConnectedComponents(matrix: boolean[][]): {from: number; to: number[]}[][] {
+function findConnectedComponents(matrix: boolean[][]): {
+  steps: {
+    adjacencyMatrix: boolean[][],
+    pathMatrix: boolean[][],
+    sortedIndices: number[],
+    reorderedMatrix: boolean[][],
+    originalIndices: number[],
+    components: number[][],
+  },
+  components: { from: number, to: number[] }[][]
+} {
   // Paso 1: Crear la matriz de adyacencia y agregar 1's en la diagonal
   const adjMatrix = createAdjacencyMatrix(matrix);
 
@@ -144,7 +154,17 @@ function findConnectedComponents(matrix: boolean[][]): {from: number; to: number
     return generateConnectionsForComponent(matrix, originalComponent);
   });
 
-  return componentsWithConnections;
+  return {
+    steps: {
+      adjacencyMatrix: adjMatrix,
+      pathMatrix,
+      sortedIndices,
+      reorderedMatrix,
+      originalIndices,
+      components,
+    },
+    components: componentsWithConnections,
+  };
 }
 
 

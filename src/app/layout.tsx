@@ -14,7 +14,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "GraphAnalyzer",
+  title: "Graph Analyzer",
   description: "Generador de components convexos",
 };
 
