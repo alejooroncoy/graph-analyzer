@@ -12,7 +12,7 @@ function useMediaQuery(query: string) {
     setMatches(mediaQuery.matches);
 
     // Función que se ejecuta cada vez que cambia el estado del media query
-    const handleChange = (e) => setMatches(e.matches);
+    const handleChange = (e: { matches: boolean | ((prevState: boolean) => boolean); }) => setMatches(e.matches);
 
     // Escucha cambios en el media query
     mediaQuery.addEventListener('change', handleChange);
