@@ -43,6 +43,16 @@ const StepsAnalyzer = ({ steps }: Props) => {
     };
   });
 
+  const highlightAreasDiagonal = steps?.adjacencyMatrix.map((row, i) => {
+    return {
+      startRow: i,
+      startCol: i,
+      endRow: i,
+      endCol: i,
+      color: "rgba(31, 119, 180, 0.2)",
+    };
+  });
+
   return (
     <Drawer>
       <DrawerTrigger asChild>
@@ -66,8 +76,8 @@ const StepsAnalyzer = ({ steps }: Props) => {
             className="ml-20 w-[calc(100%_-_10rem)] pb-3">
               <CarouselContent>
                 <CarouselItem className="md:basis-1/2 2xl:basis-1/3 space-y-3">
-                  <Matrix matrix={steps.adjacencyMatrix} />
-                  <h4 className="text-center">Paso 1: Poner diagonales en la diagonal</h4>
+                  <Matrix highlightAreas={highlightAreasDiagonal} matrix={steps.adjacencyMatrix} />
+                  <h4 className="text-center">Paso 1: Colar {"1's"} en la diagonal principal</h4>
                 </CarouselItem>
                 <CarouselItem className="md:basis-1/2 2xl:basis-1/3 space-y-3">
                   <Matrix matrix={steps.pathMatrix} />
