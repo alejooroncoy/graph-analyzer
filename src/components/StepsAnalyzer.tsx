@@ -77,12 +77,12 @@ const StepsAnalyzer = ({ steps }: Props) => {
               <CarouselContent>
                 <CarouselItem className="md:basis-1/2 2xl:basis-1/3 space-y-3">
                   <Matrix highlightAreas={highlightAreasDiagonal} matrix={steps.adjacencyMatrix} />
-                  <h4 className="text-center">Paso 1: Colar {"1's"} en la diagonal principal</h4>
+                  <h4 className="text-center">Paso 1: Colocar {"1's"} en la diagonal principal</h4>
                 </CarouselItem>
                 <CarouselItem className="md:basis-1/2 2xl:basis-1/3 space-y-3">
                   <Matrix matrix={steps.pathMatrix} />
                   <h4 className="text-center">
-                    Paso 2: Calcular la matriz de caminos (Usamos warshall)
+                    Paso 2: Calcular la matriz de caminos (Usamos el algoritmo de warshall)
                   </h4>
                 </CarouselItem>
                 <CarouselItem className="md:basis-1/2 2xl:basis-1/3 space-y-3">
